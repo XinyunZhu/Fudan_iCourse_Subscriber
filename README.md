@@ -4,16 +4,18 @@
 
 部署在 GitHub Actions 上，每天定时运行，**零成本、免服务器、全自动**。
 
+> 本项目仅供学习交流与个人复习使用，不可用于侵犯知识产权等非法目的，否则后果自负。
+
 ## 它能做什么？
 
-假设你选了「数据结构」和「操作系统」两门课。每天晚上 22:00，iCourse Subscriber 会自动：
+假设你选了「摸鱼学导论」和「躺平学原理」两门课。每天晚上 22:00，iCourse Subscriber 会自动：
 
 1. 登录你的复旦 iCourse 账号（通过 WebVPN）
 2. 检查这两门课是否有新的录播视频
 3. 如果有：下载视频 → 语音识别 → AI 生成课程笔记
 4. 将所有新课次的笔记汇总成**一封邮件**发送给你
 
-邮件包含专业排版的 Markdown 渲染内容，覆盖课程重点、公式推导、代码示例等。如果老师提到了作业、考试、签到等事项，会在笔记开头醒目标注。
+邮件包含专业排版的 Markdown 渲染内容，覆盖课程重点、讲解内容、例子讲解等。如果老师提到了作业、考试、签到、组队等重要课程事项，会在笔记开头醒目标注。
 
 ## 快速部署（5 分钟）
 
@@ -30,10 +32,12 @@
 | `STUID` | 复旦学号 | `22307110000` |
 | `UISPSW` | UIS 统一身份认证密码 | `your_password` |
 | `COURSE_IDS` | 要监控的课程 ID，多个用英文逗号分隔 | `35472,30251` |
-| `DASHSCOPE_API_KEY` | ModelScope 平台 API Key | `sk-xxxxxxxx` |
+| `DASHSCOPE_API_KEY` | ModelScope 平台 API Key | `ms-xxxxxxxx` |
 | `SMTP_EMAIL` | 用于发送邮件的 QQ 邮箱 | `123456@qq.com` |
 | `SMTP_PASSWORD` | QQ 邮箱 SMTP **授权码**（不是登录密码） | `abcdefghijklmnop` |
-| `RECEIVER_EMAIL` | 接收摘要邮件的邮箱（可以和发件邮箱相同） | `you@example.com` |
+| `RECEIVER_EMAIL` | 接收摘要邮件的邮箱（可以和发件邮箱相同） | `you@m.fudan.edu.com` |
+
+不知道这些secrets是什么意思？见如下讲解：
 
 ### 第 3 步：获取课程 ID
 
@@ -49,12 +53,16 @@
 2. 进入 [API 密钥管理](https://modelscope.cn/my/myaccesstoken) 页面
 3. 创建一个 API Key，复制到 `DASHSCOPE_API_KEY`
 
+> 魔搭社区提供每天两千次的免费API调用额度，无需付费即可调用大模型api生成课程笔记。
+
 ### 第 5 步：获取 QQ 邮箱 SMTP 授权码
 
-1. 登录 [QQ 邮箱](https://mail.qq.com) → 设置 → 账户
+1. 登录 [QQ 邮箱](https://mail.qq.com) → 设置 → 账户与安全 → 安全设置
 2. 找到「POP3/IMAP/SMTP/Exchange/CardDAV/CalDAV 服务」
 3. 开启 SMTP 服务，按提示获取**授权码**（16 位字母）
 4. 将授权码填入 `SMTP_PASSWORD`
+
+> SMTP授权码的作用是以你邮箱的名义给你自己发送邮件通知。
 
 ### 第 6 步：运行
 
@@ -63,7 +71,7 @@
 
 首次运行会处理所有已有录播，后续只处理新增课次。
 
-## 本地运行
+## 本地运行（Linux环境）
 
 ```bash
 # 克隆仓库
@@ -90,7 +98,7 @@ export $(cat .env | xargs)
 python main.py
 ```
 
-## 数据安全
+## 数据安全与知识产权
 
 - **不保留视频**：视频下载后立即通过 ffmpeg 管道转录，转录完成立即删除
 - **数据库加密存储**：SQLite 数据库在提交到仓库前使用 AES-256-CBC 加密，密钥由你的多个 Secret 拼接派生，即使仓库公开，他人也无法解密
@@ -123,50 +131,58 @@ python main.py
 
 ### 整体流程
 
-```
-┌─────────────────────────────────────────────────────────┐
-│                    GitHub Actions Cron                   │
-│                   (每天 22:00 UTC+8)                     │
-├─────────────────────────────────────────────────────────┤
-│  1. 解密 data/icourse.db.enc → data/icourse.db          │
-│  2. python main.py                                      │
-│  3. 加密 data/icourse.db → git commit + push            │
-└──────────────────────────┬──────────────────────────────┘
-                           │
-          ┌────────────────▼────────────────┐
-          │          main.py: run()          │
-          ├─────────────────────────────────┤
-          │  WebVPN 登录 + iCourse CAS 认证  │
-          │         (5 次重试)               │
-          └────────────────┬────────────────┘
-                           │
-         ┌─────────────────▼──────────────────┐
-         │  for each course_id in COURSE_IDS  │
-         │  ┌──────────────────────────────┐  │
-         │  │ 检查 session → 获取课程详情    │  │
-         │  │ 对比 DB → 筛选未处理的课次     │  │
-         │  │ (playback_status=1 且未处理)   │  │
-         │  └──────────────┬───────────────┘  │
-         │     for each new lecture            │
-         │  ┌──────────────▼───────────────┐  │
-         │  │ 检查 session (防过期)         │  │
-         │  │ get_video_url → 签名 CDN URL  │  │
-         │  │ download_video (流式下载)      │  │
-         │  │ transcribe_video (管道转录)    │  │
-         │  │ 删除视频文件                   │  │
-         │  │ summarize (LLM 摘要)          │  │
-         │  │ 存入 DB, 标记 processed       │  │
-         │  │ 收集到 email_items            │  │
-         │  └──────────────────────────────┘  │
-         └─────────────────┬──────────────────┘
-                           │
-          ┌────────────────▼────────────────┐
-          │  批量发送邮件 (1 封包含所有摘要)  │
-          │  标记 emailed                    │
-          └─────────────────────────────────┘
+```mermaid
+flowchart TD
+    %% GitHub Actions 层级
+    subgraph Cron ["GitHub Actions Cron (每天 22:00 UTC+8)"]
+        A1["1. 解密 data/icourse.db.enc → data/icourse.db"]
+        A2["2. python main.py"]
+        A3["3. 加密 data/icourse.db → git commit + push"]
+    end
+
+    %% Python 脚本层级
+    subgraph Main ["main.py: run()"]
+        B1["WebVPN 登录 + iCourse CAS 认证<br/>(5 次重试)"]
+        
+        %% 课程循环
+        subgraph CourseLoop ["for each course_id in COURSE_IDS"]
+            C1["检查 session → 获取课程详情<br/>对比 DB → 筛选未处理的课次<br/>(playback_status=1 且未处理)"]
+            
+            %% 课次循环
+            subgraph LectureLoop ["for each new lecture"]
+                D1["检查 session (防过期)"]
+                D2["get_video_url → 签名 CDN URL"]
+                D3["download_video (流式下载)"]
+                D4["transcribe_video (管道转录)"]
+                D5["删除视频文件"]
+                D6["summarize (LLM 摘要)"]
+                D7["存入 DB, 标记 processed<br/>收集到 email_items"]
+                
+                D1 --> D2 --> D3 --> D4 --> D5 --> D6 --> D7
+            end
+            
+            C1 --> D1
+        end
+        
+        E1["批量发送邮件 (1 封包含所有摘要)<br/>标记 emailed"]
+        
+        B1 --> C1
+        D7 --> E1
+    end
+
+    %% 定义跨模块的执行流转连线
+    A1 --> A2
+    A2 -->|触发脚本执行| B1
+    E1 -->|执行完毕返回| A3
+    
+    %% 可选：给循环框加一点虚线样式以区分普通模块
+    classDef loopBlock fill:#f0f8ff,stroke:#00509E,stroke-width:1.5px,stroke-dasharray: 5 5;
+    class CourseLoop,LectureLoop loopBlock;
 ```
 
 ### WebVPN 认证（`src/webvpn.py`）
+
+我们逆向了复旦的WebVPN和UIS登录的完整流程，以便在线定时登录。以下是流程说明：
 
 复旦 WebVPN 使用 **AES-128-CFB** 对目标 URL 的主机名进行加密，IV 固定为 `wrdvpnisthebest!`。例如：
 
