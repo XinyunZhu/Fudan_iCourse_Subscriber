@@ -123,16 +123,18 @@ def run():
             course_title = detail["title"]
             teacher = detail["teacher"]
             lectures = detail["lectures"]
+            playback_count = sum(1 for l in lectures if l.get("has_playback"))
             print(f"  Title: {course_title} (Teacher: {teacher})")
-            print(f"  Total lectures: {len(lectures)}")
+            print(f"  Total lectures: {len(lectures)} ({playback_count} with playback)")
 
             db.upsert_course(course_id, course_title, teacher)
 
-            # Find new lectures + previously failed (unprocessed) ones
+            # Find new lectures with playback + previously failed (unprocessed) ones
             known_processed = db.get_processed_sub_ids(course_id)
             new_lectures = [
                 lec for lec in lectures
-                if str(lec["sub_id"]) not in known_processed
+                if lec.get("has_playback")
+                and str(lec["sub_id"]) not in known_processed
             ]
             # Also retry any previously inserted but unprocessed
             unprocessed = db.get_unprocessed_lectures(course_id)

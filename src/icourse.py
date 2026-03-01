@@ -74,7 +74,7 @@ class ICourseClient:
         """Get course details including title, teacher, and lecture list.
 
         Returns dict with keys: title, teacher, lectures
-        Each lecture has: sub_id, sub_title, lecturer_name
+        Each lecture has: sub_id, sub_title, lecturer_name, date, has_playback
         """
         url = f"{self.base_url}/courseapi/v3/multi-search/get-course-detail"
         resp = self.vpn.get(url, params={"course_id": course_id})
@@ -106,6 +106,7 @@ class ICourseClient:
                                         "lecturer_name", ""
                                     ),
                                     "date": f"{year}-{month}-{day}",
+                                    "has_playback": str(item.get("playback_status")) == "1",
                                 }
                             )
 
