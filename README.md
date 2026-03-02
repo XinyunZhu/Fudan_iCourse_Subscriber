@@ -8,7 +8,7 @@
 
 ## 它能做什么？
 
-假设你选了「摸鱼学导论」和「躺平学原理」两门课。每天晚上 22:00，iCourse Subscriber 会自动：
+假设你选了「摸鱼学导论」和「躺平学原理」两门课。在每天设定的时间，iCourse Subscriber 会自动：
 
 1. 登录你的复旦 iCourse 账号（通过 WebVPN）
 2. 检查这两门课是否有新的录播视频
@@ -52,6 +52,7 @@
 1. 注册 [ModelScope](https://modelscope.cn/)
 2. 进入 [API 密钥管理](https://modelscope.cn/my/myaccesstoken) 页面
 3. 创建一个 API Key，复制到 `DASHSCOPE_API_KEY`
+4. 根据平台指引绑定阿里云账号，否则后续调用可能失败
 
 > 魔搭社区提供每天两千次的免费API调用额度，无需付费即可调用大模型api生成课程笔记。
 
@@ -66,12 +67,14 @@
 
 ### 第 6 步：运行
 
-- **自动运行**：每天北京时间 22:00 自动执行（可在 `check.yml` 中修改 cron）
+- **自动运行**：默认为每天下午13:00、晚上20:00（北京时间）自动执行，如需修改可在 `check.yml` 中修改 cron
 - **手动触发**：进入仓库 → Actions → iCourse Check → Run workflow
 
 首次运行会处理所有已有录播，后续只处理新增课次。
 
 ## 本地运行（Linux环境）
+
+> 本地运行方式未经测试，建议使用github actions方式部署。
 
 ```bash
 # 克隆仓库
@@ -120,7 +123,7 @@ python main.py
 │   ├── webvpn.py           # WebVPN AES 加密 + 7 步 IDP 认证
 │   ├── icourse.py          # iCourse API 客户端 + CDN 视频签名
 │   ├── transcriber.py      # ffmpeg 管道 + silero VAD + SenseVoice ASR
-│   ├── summarizer.py       # ModelScope GLM-5 LLM 摘要生成
+│   ├── summarizer.py       # ModelScope LLM 摘要生成
 │   ├── emailer.py          # 批量邮件：Markdown → HTML 渲染 + CSS 排版
 │   └── database.py         # SQLite 课次追踪与状态管理
 ├── .github/workflows/
