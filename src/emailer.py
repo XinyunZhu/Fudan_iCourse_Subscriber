@@ -123,13 +123,13 @@ def _md_to_html(md_text: str) -> str:
             latex_content = original[2:-2]
             img = (
                 f'<div style="text-align:center;margin:12px 0">'
-                f'<img src="https://latex.codecogs.com/png.latex?\\dpi{{150}}%20{quote(latex_content)}"'
+                f'<img src="https://latex.codecogs.com/svg.latex?\\dpi{{150}}%20{quote(latex_content)}"'
                 f' alt="{escape(latex_content)}" style="vertical-align:middle"></div>'
             )
         else:
             latex_content = original[1:-1]
             img = (
-                f'<img src="https://latex.codecogs.com/png.latex?\\dpi{{150}}\\inline%20{quote(latex_content)}"'
+                f'<img src="https://latex.codecogs.com/svg.latex?\\dpi{{150}}\\inline%20{quote(latex_content)}"'
                 f' alt="{escape(latex_content)}" style="vertical-align:middle">'
             )
         html = html.replace(key, img)
