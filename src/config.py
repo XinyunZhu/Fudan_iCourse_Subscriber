@@ -30,14 +30,13 @@ LLM_MODELS = [
     "ZhipuAI/GLM-4.7"
 ]
 
-# Groq fallback (for content policy bypass)
-GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
-GROQ_BASE_URL = "https://api.groq.com/openai/v1"
-GROQ_MODELS = [
-    "llama-3.3-70b-versatile",
-    "llama-4-maverick",
-    "llama-4-scout",
-    "openai/gpt-oss-120b",
+# Gemini fallback (for content policy bypass)
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+GEMINI_BASE_URL = "https://generativelanguage.googleapis.com/v1beta/openai/"
+GEMINI_MODELS = [
+    "gemini-2.0-flash",
+    "gemini-2.5-flash-preview-05-20",
+    "gemini-1.5-pro",
 ]
 
 # QQ SMTP

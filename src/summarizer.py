@@ -35,11 +35,11 @@ class Summarizer:
         )
         self.models = list(config.LLM_MODELS)
 
-        self._groq_client = None
-        if config.GROQ_API_KEY:
-            self._groq_client = OpenAI(
-                api_key=config.GROQ_API_KEY,
-                base_url=config.GROQ_BASE_URL,
+        self._gemini_client = None
+        if config.GEMINI_API_KEY:
+            self._gemini_client = OpenAI(
+                api_key=config.GEMINI_API_KEY,
+                base_url=config.GEMINI_BASE_URL,
             )
 
     def _call_llm(self, client: OpenAI, model: str,
@@ -69,7 +69,7 @@ class Summarizer:
     def summarize(self, title: str, content: str) -> tuple[str, str]:
         """Summarize lecture content, trying multiple models on failure.
 
-        If all primary models fail due to content policy, falls back to Groq.
+        If all primary models fail due to content policy, falls back to Gemini.
 
         Returns:
             (summary, model_used) tuple.
@@ -91,18 +91,18 @@ class Summarizer:
                 if _is_content_blocked(e):
                     content_blocked = True
 
-        # Fallback: Groq models (when content policy blocks primary models)
-        if content_blocked and self._groq_client:
-            print("[Summarizer] Content blocked by primary platform, trying Groq...")
-            for model in config.GROQ_MODELS:
+        # Fallback: Gemini models (when content policy blocks primary models)
+        if content_blocked and self._gemini_client:
+            print("[Summarizer] Content blocked by primary platform, trying Gemini...")
+            for model in config.GEMINI_MODELS:
                 try:
                     result = self._call_llm(
-                        self._groq_client, model, title, content,
+                        self._gemini_client, model, title, content,
                     )
-                    return (result, f"groq/{model}")
+                    return (result, f"gemini/{model}")
                 except Exception as e:
-                    print(f"[Summarizer] groq/{model} failed: {type(e).__name__}: {e}")
-                    errors.append(f"groq/{model}: {e}")
+                    print(f"[Summarizer] gemini/{model} failed: {type(e).__name__}: {e}")
+                    errors.append(f"gemini/{model}: {e}")
 
         raise RuntimeError(
             "All LLM models failed:\n" + "\n".join(errors)
