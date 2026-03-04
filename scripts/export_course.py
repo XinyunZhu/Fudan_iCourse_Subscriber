@@ -30,7 +30,9 @@ from src.database import Database  # noqa: E402
 from src.emailer import _EMAIL_CSS, _md_to_html  # noqa: E402
 
 
-def _build_html(course_title: str, teacher: str, lectures: list[dict]) -> str:
+def _build_html(
+    course_title: str, teacher: str, lectures: list[dict], pdf_mode: bool = False
+) -> str:
     """Build a complete styled HTML document from course summaries."""
     body_parts = [
         f"<h1>{escape(course_title)}</h1>",
@@ -42,7 +44,7 @@ def _build_html(course_title: str, teacher: str, lectures: list[dict]) -> str:
             f"<h2>{escape(lec['sub_title'])} "
             f"<small>({escape(lec['date'])})</small></h2>"
         )
-        body_parts.append(_md_to_html(lec["summary"]))
+        body_parts.append(_md_to_html(lec["summary"], pdf_mode=pdf_mode))
         body_parts.append("<hr>")
 
     return (
@@ -155,7 +157,7 @@ def main():
         print("Email configuration incomplete. Set SMTP_EMAIL, SMTP_PASSWORD, RECEIVER_EMAIL.")
         sys.exit(1)
 
-    html = _build_html(course_title, teacher, lectures)
+    html = _build_html(course_title, teacher, lectures, pdf_mode=args.pdf)
     subject = f"[iCourse 课程摘要导出] {course_title}"
 
     if args.pdf:

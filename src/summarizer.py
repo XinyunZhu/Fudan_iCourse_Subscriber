@@ -17,11 +17,6 @@ SYSTEM_PROMPT = """你是一个专业的课程助教。你的任务是根据用�
 5. **忠于原文与详尽**：总结必须尽可能详细且足够长，包含具体的推导细节、案例、文献或者核心概念，不要过度概括。禁止捏造录音中未提及的内容。
 6. 你需要格外注意课程中是否提及了作业、考试、签到、组队等关键事项，如果有的话，用三级标题【课程事项提醒】标注在开头。"""
 
-def _is_content_blocked(error: Exception) -> bool:
-    """Check if an API error is a content policy rejection."""
-    msg = str(error).lower()
-    return "data_inspection_failed" in msg or "inappropriate content" in msg
-
 
 class Summarizer:
     """Course lecture summarizer using ModelScope OpenAI-compatible API."""
@@ -67,33 +62,24 @@ class Summarizer:
         return result
 
     def summarize(self, title: str, content: str) -> tuple[str, str]:
-        """Summarize lecture content, trying multiple models on failure.
+        """Summarize lecture content, trying Gemini first then ModelScope models.
 
-        If all primary models fail due to content policy, falls back to Gemini.
+        If GEMINI_API_KEY is set, Gemini is tried first. On failure (or when
+        the key is absent), all ModelScope models are tried in order.
 
         Returns:
             (summary, model_used) tuple.
+
+        Raises:
+            RuntimeError: If all models fail.
         """
         if not content or not content.strip():
             return ("（内容为空）", "")
 
         errors = []
-        content_blocked = False
 
-        # Primary: ModelScope models
-        for model in self.models:
-            try:
-                result = self._call_llm(self.client, model, title, content)
-                return (result, model)
-            except Exception as e:
-                print(f"[Summarizer] {model} failed: {type(e).__name__}: {e}")
-                errors.append(f"{model}: {e}")
-                if _is_content_blocked(e):
-                    content_blocked = True
-
-        # Fallback: Gemini models (when content policy blocks primary models)
-        if content_blocked and self._gemini_client:
-            print("[Summarizer] Content blocked by primary platform, trying Gemini...")
+        # Primary: Gemini (when API key is available)
+        if self._gemini_client:
             for model in config.GEMINI_MODELS:
                 try:
                     result = self._call_llm(
@@ -103,6 +89,15 @@ class Summarizer:
                 except Exception as e:
                     print(f"[Summarizer] gemini/{model} failed: {type(e).__name__}: {e}")
                     errors.append(f"gemini/{model}: {e}")
+
+        # Fallback: ModelScope models
+        for model in self.models:
+            try:
+                result = self._call_llm(self.client, model, title, content)
+                return (result, model)
+            except Exception as e:
+                print(f"[Summarizer] {model} failed: {type(e).__name__}: {e}")
+                errors.append(f"{model}: {e}")
 
         raise RuntimeError(
             "All LLM models failed:\n" + "\n".join(errors)

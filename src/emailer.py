@@ -93,6 +93,8 @@ ul, ol { padding-left: 24px; }
 li { margin-bottom: 4px; }
 """
 
+_PDF_LATEX_SCALE = 2.5
+
 _IMAGE_CACHE = {}
 
 def _get_image_dimensions(url: str, dpi: int = 300) -> tuple:
@@ -116,11 +118,16 @@ def _get_image_dimensions(url: str, dpi: int = 300) -> tuple:
     except Exception as e:
         print(f"[LaTeX Render] 获取图片尺寸失败 {url}: {e}")
         return None, None
-def _md_to_html(md_text: str) -> str:
+def _md_to_html(md_text: str, pdf_mode: bool = False) -> str:
     """Convert Markdown to styled HTML, rendering LaTeX math as images.
 
     Processing order: extract LaTeX → markdown convert → restore as <img>.
     This prevents the markdown engine from corrupting backslash escapes in LaTeX.
+
+    Args:
+        md_text: Markdown source text.
+        pdf_mode: When True, scale LaTeX image dimensions to 1/2.5 of their
+                  normal size to avoid oversized images in PDF output.
     """
     latex_map = {}
     counter = 0
@@ -146,6 +153,9 @@ def _md_to_html(md_text: str) -> str:
             w, h = _get_image_dimensions(url)
             
             if w and h:
+                if pdf_mode:
+                    w = max(1, int(w / _PDF_LATEX_SCALE))
+                    h = max(1, int(h / _PDF_LATEX_SCALE))
                 # 完美方案：写死 width 和 height
                 img = (
                     f'<div style="text-align:center;margin:16px 0">'
@@ -166,6 +176,9 @@ def _md_to_html(md_text: str) -> str:
             w, h = _get_image_dimensions(url)
             
             if w and h:
+                if pdf_mode:
+                    w = max(1, int(w / _PDF_LATEX_SCALE))
+                    h = max(1, int(h / _PDF_LATEX_SCALE))
                 # 完美方案：写死 width 和 height，并使用 vertical-align 微调对齐基线
                 img = (
                     f'<img src="{url}" alt="{escape(latex_content)}" '
