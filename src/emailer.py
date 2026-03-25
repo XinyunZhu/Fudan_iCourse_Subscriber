@@ -367,12 +367,14 @@ class Emailer:
         if cid_images:
             print(f"[Emailer] Embedded {len(cid_images)} LaTeX images as CID")
 
-        # Retry with exponential backoff
+       # Retry with exponential backoff (Updated for Outlook STARTTLS)
         for attempt in range(3):
             try:
-                with smtplib.SMTP_SSL(self.host, self.port) as server:
-                    server.login(self.sender, self.password)
-                    server.sendmail(self.sender, self.receiver, msg.as_string())
+                server = smtplib.SMTP(self.host, self.port)
+                server.starttls()  # Outlook 必须的一步
+                server.login(self.sender, self.password)
+                server.sendmail(self.sender, self.receiver, msg.as_string())
+                server.quit()
                 print(f"[Emailer] Sent: {subject}")
                 return True
             except Exception as e:
