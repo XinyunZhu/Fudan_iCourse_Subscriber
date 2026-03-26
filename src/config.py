@@ -42,8 +42,8 @@ GEMINI_MODELS = [
 SMTP_EMAIL = os.environ.get("SMTP_EMAIL", "")
 SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
 RECEIVER_EMAIL = os.environ.get("RECEIVER_EMAIL", "")
-SMTP_HOST = "smtp-mail.outlook.com"
-SMTP_PORT = 587
+SMTP_HOST = "mail.fudan.edu.cn"
+SMTP_PORT = 465
 
 # Database & Storage
 DATA_DIR = os.environ.get("DATA_DIR", "data")
