@@ -367,20 +367,18 @@ class Emailer:
         if cid_images:
             print(f"[Emailer] Embedded {len(cid_images)} LaTeX images as CID")
 
-       # Retry with exponential backoff (Updated for Outlook STARTTLS)
+       # 换回复旦邮箱专用的 SSL 模式
         for attempt in range(3):
             try:
-                server = smtplib.SMTP(self.host, self.port)
-                server.starttls()  # Outlook 必须的一步
-                server.login(self.sender, self.password)
-                server.sendmail(self.sender, self.receiver, msg.as_string())
-                server.quit()
+                with smtplib.SMTP_SSL(self.host, self.port) as server:
+                    server.login(self.sender, self.password)
+                    server.sendmail(self.sender, self.receiver, msg.as_string())
                 print(f"[Emailer] Sent: {subject}")
                 return True
             except Exception as e:
                 print(f"[Emailer] Attempt {attempt + 1}/3 failed: {e}")
                 if attempt < 2:
                     time.sleep(2 ** attempt)
-
+                    
         print("[Emailer] All send attempts failed.")
         return False
