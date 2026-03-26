@@ -262,6 +262,8 @@ def run():
         print(f"[Email] Including {len(unsent)} previously unsent lecture(s).")
 
     # Send one email with all summaries
+    # 补丁：一次只发最新的 2 节课，防止 QQ 邮箱因为体积太大拦截
+    email_items = email_items[:2]
     if emailer and email_items:
         try:
             print(f"\n[Email] Sending summary for {len(email_items)} lecture(s)...")
